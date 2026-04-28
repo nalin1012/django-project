@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ post.title }} | Django Blog{% endblock %}
+
+{% block content %}
+<article class="card shadow-lg">
+    <div class="card-body p-5">
+        <!-- Header -->
+        <div class="mb-4">
+            <h1 class="h2 mb-3">{{ post.title }}</h1>
+            <div class="d-flex flex-wrap gap-3 align-items-center mb-4 pb-3 border-bottom">
+                <span class="text-muted">
+                    👤 <strong>{{ post.author.username }}</strong>
+                </span>
+                <span class="text-muted">
+                    📅 {{ post.created_at|date:"M d, Y" }}
+                </span>
+                {% if post.updated_at != post.created_at %}
+                    <span class="badge bg-warning text-dark">Updated</span>
+                {% endif %}
+                
+                <!-- Like Count -->
+                <span class="ms-auto badge bg-info">❤️ {{ post.total_likes }} Likes</span>
+            </div>
+            
+            <!-- Author Actions -->
+            {% if is_author %}
+                <div class="d-flex gap-2 mb-3">
+                    <a href="{% url 'edit-post' post.pk %}" class="btn btn-warning btn-sm">
+                        ✏️ Edit
+                    </a>
+                    <a href="{% url 'delete-post' post.pk %}" class="btn btn-danger btn-sm">
+                        🗑️ Delete
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Featured Image -->
+        {% if post.image %}
+            <div class="mb-4">
+                <img src="{{ post.image.url }}" class="img-fluid rounded w-100" 
+                     alt="{{ post.title }}" style="max-height: 500px; object-fit: cover;">
+            </div>
+        {% endif %}
+        
+        <!-- Content -->
+        <div class="mb-5" style="line-height: 1.8; font-size: 1.05rem;">
+            {{ post.content|linebreaks }}
+        </div>
+        
+        <!-- Like Button -->
+        <div class="mb-5 pb-4 border-bottom">
+            {% if user.is_authenticated %}
+                <form method="post" action="{% url 'like-post' post.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    {% if user_liked %}
+                        <button type="submit" class="btn btn-danger btn-lg">
+                            ❤️ Unlike ({{ post.total_likes }})
+                        </button>
+                    {% else %}
+                        <button type="submit" class="btn btn-outline-danger btn-lg">
+                            🤍 Like ({{ post.total_likes }})
+                        </button>
+                    {% endif %}
+                </form>
+            {% else %}
+                <a href="{% url 'login' %}" class="btn btn-outline-danger btn-lg">
+                    🤍 Like to show appreciation ({{ post.total_likes }})
+                </a>
+            {% endif %}
+        </div>
+        
+        <!-- Comments Section -->
+        <div class="mt-5">
+            <h3 class="h5 mb-4">💬 Comments ({{ comments.count }})</h3>
+            
+            <!-- Comment Form -->
+            {% if user.is_authenticated %}
+                <div class="card mb-4 bg-light">
+                    <div class="card-body">
+                        <form method="post" action="{% url 'add-comment' post.pk %}">
+                            {% csrf_token %}
+                            {{ comment_form.content }}
+                            <button type="submit" class="btn btn-primary btn-sm mt-2">Post Comment</button>
+                        </form>
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-info mb-4">
+                    <a href="{% url 'login' %}" class="alert-link">Login</a> to post a comment.
+                </div>
+            {% endif %}
+            
+            <!-- Comments List -->
+            {% if comments %}
+                <div class="comments-section">
+                    {% for comment in comments %}
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="card-subtitle mb-1">
+                                            <strong>{{ comment.author.username }}</strong>
+                                        </h6>
+                                        <small class="text-muted">{{ comment.created_at|date:"M d, Y \a\t g:i A" }}</small>
+                                    </div>
+                                    {% if user == comment.author or user == post.author %}
+                                        <form method="post" action="{% url 'delete-comment' post.pk comment.pk %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger btn-sm" 
+                                                    onclick="return confirm('Delete this comment?')">
+                                                🗑️
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                                <p class="card-text mb-0">{{ comment.content|linebreaks }}</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-secondary" role="alert">
+                    No comments yet. Be the first to comment! 👇
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</article>
+
+<!-- Back to Home -->
+<div class="mt-4">
+    <a href="{% url 'home' %}" class="btn btn-outline-primary">← Back to Posts</a>
+</div>
+{% endblock %}
